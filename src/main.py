@@ -86,10 +86,11 @@ class ControleTello:
     def executar_missao(self, lista_coordenadas):
         for coords in lista_coordenadas:
             (x_novo, y_novo), self.yaw = coords[0]
+            print(self.x, self.y, self.yaw)
+            x_mov, y_mov = (x_novo - self.x, y_novo - self.y)
+            modulo, angulo = cartesian_to_polar(x_mov, y_mov)
             self.x += x_novo
             self.y += y_novo
-            print(self.x, self.y, self.yaw)
-            modulo, angulo = cartesian_to_polar(x_novo, y_novo)
             print(f"{angulo=}")
             print(f"{modulo=}")
 
