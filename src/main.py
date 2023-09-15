@@ -107,7 +107,7 @@ class ControleTello:
                 time.sleep(1)
                 self.tello.move_forward(modulo)
                 time.sleep(1)
-                self.tello.rotate_clockwise(lista_coordenadas[i][1])
+                self.tello.rotate_clockwise(lista_coordenadas[coords][1])
 
         if self.tello:
             self.tello.land()
