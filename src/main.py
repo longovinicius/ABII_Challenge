@@ -14,8 +14,8 @@ class ControleTello:
         self.tello.streamon()
         self.tello.takeoff()
         time.sleep(1)
-        self.tello.move_up(altura)
-        self.x, self.y, self.yaw = 0, 0, 0
+        #self.tello.move_up(altura)
+        self.x, self.y, self.yaw_atual = 0, 0, 0
         self.detected_ids = set()
 
         # Initialize the MarkerDetector
@@ -96,13 +96,15 @@ class ControleTello:
 
     def executar_missao(self, lista_coordenadas):
         for coords in lista_coordenadas:
+            angulo_acumulado = 0
             (x_target, y_target), yaw_target = coords
-            print(self.x, self.y, self.yaw)
             x_mov, y_mov = (x_target - self.x, y_target - self.y)
+            print(f"Initial Angle: {self.yaw_atual}")
             modulo, angulo = cartesian_to_polar(x_mov, y_mov)
+            print(f"Angulo Calculado Cartesiano: {angulo}")
             self.x += x_target
             self.y += y_target
-            self.yaw = yaw_target
+            
             print(f"{angulo=}")
             print(f"{modulo=}")
 
@@ -110,22 +112,23 @@ class ControleTello:
             processed_frame = self.process_frame_for_markers()
 
             # Display the processed frame (optional)
-            cv2.imshow("Processed Frame", processed_frame)
+            # cv2.imshow("Processed Frame", processed_frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 
             if self.tello:
                 time.sleep(1)
-                self.tello.rotate_clockwise(angulo)
+                angulo_acumulado = angulo - self.yaw
+                print(f"Angulo de movimentação 1: {angulo_acumulado}")
+                self.tello.rotate_clockwise(angulo_acumulado)
                 time.sleep(1)
                 self.tello.move_forward(modulo)
                 time.sleep(1)
-                print(f"Target: {yaw_target}")
-                print(f"Actual Movement: {yaw_target - angulo}")
-                self.tello.rotate_clockwise(yaw_target - angulo)
+                angulo_acumulado = yaw_target - angulo_acumulado - self.yaw
+                print(f"Angulo de movimentação 2: {angulo_acumulado}")
+                self.tello.rotate_clockwise(angulo_acumulado)
                 time.sleep(1)
-                
-
+                self.yaw += angulo_acumulado
 
         if self.tello:
             self.tello.land()
