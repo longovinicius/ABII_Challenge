@@ -96,12 +96,13 @@ class ControleTello:
 
     def executar_missao(self, lista_coordenadas):
         for coords in lista_coordenadas:
-            (x_target, y_target), self.yaw = coords
+            (x_target, y_target), yaw_target = coords
             print(self.x, self.y, self.yaw)
             x_mov, y_mov = (x_target - self.x, y_target - self.y)
             modulo, angulo = cartesian_to_polar(x_mov, y_mov)
             self.x += x_target
             self.y += y_target
+            self.yaw = yaw_target
             print(f"{angulo=}")
             print(f"{modulo=}")
 
@@ -119,7 +120,9 @@ class ControleTello:
                 time.sleep(1)
                 self.tello.move_forward(modulo)
                 time.sleep(1)
-                self.tello.rotate_clockwise(self.yaw - angulo)
+                print(f"Target: {yaw_target}")
+                print(f"Actual Movement: {yaw_target - angulo}")
+                self.tello.rotate_clockwise(yaw_target - angulo)
                 time.sleep(1)
                 
 
