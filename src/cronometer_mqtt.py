@@ -4,6 +4,7 @@ import paho.mqtt.client as mqtt
 BROKER_ADDRESS = "192.168.0.2"
 PORT = 1883
 
+
 class CronometerMQTT:
     def __init__(self):
         self.client = mqtt.Client()
