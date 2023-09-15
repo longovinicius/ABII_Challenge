@@ -19,6 +19,9 @@ class ControleTello:
         # Initialize the MarkerDetector
         frame_read = self.tello.get_frame_read()
         self.marker_detector = MarkerDetector(frame_read.frame)
+        self.image_dir = "aruco_images"
+        if not os.path.exists(self.image_dir):
+            os.makedirs(self.image_dir)
 
     def process_frame_for_markers(self):
         frame_read = self.tello.get_frame_read()
