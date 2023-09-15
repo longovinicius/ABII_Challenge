@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import math
+from cronometer_mqtt import CronometerMQTT
+
 class MarkerDetector:
     def __init__(self, init_frame: np.ndarray, target_marker_width: float = 0.10, nav_marker_width: float = 0.27) -> None:
         self.target_marker_width = target_marker_width
@@ -101,10 +103,10 @@ def calculate_actual_distance_and_angle(pixel_offset, z_distance, focal_length):
     D = math.sqrt(X**2 + z_distance**2)
     
     return D, theta_deg
-# # Initialize the camera
-# cap = cv2.VideoCapture(0)
+# Initialize the camera
+cap = cv2.VideoCapture(0)
 
-# # Get an initial frame to initialize the MarkerDetector
+# Get an initial frame to initialize the MarkerDetector
 # ret, init_frame = cap.read()
 # if not ret:
 #     print("Failed to get the initial frame.")
@@ -137,3 +139,16 @@ def calculate_actual_distance_and_angle(pixel_offset, z_distance, focal_length):
 
 # cap.release()
 # cv2.destroyAllWindows()
+import time
+start = time.time()
+subscriber = CronometerMQTT()
+subscriber.subscribe_topic("ProximoID")
+subscriber.subscribe_topic("TempoDecorrido")
+while True:
+    now = time.time()
+    TARGET_ID = subscriber.get_value_for_topic("ProximoID")
+    time_stamp = subscriber.get_value_for_topic("TempoDecorrido")
+    print(f"ID: {TARGET_ID}")
+    print(f"TIME: {time_stamp}")
+    if now - start > 10:
+        subscriber.publish("StopCronometro","true")
