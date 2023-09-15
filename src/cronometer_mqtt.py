@@ -1,7 +1,7 @@
 import paho.mqtt.client as mqtt
 
 # Configurações globais do broker
-BROKER_ADDRESS = "192.168.137.1"
+BROKER_ADDRESS = "192.168.0.2"
 PORT = 1883
 
 class CronometerMQTT:

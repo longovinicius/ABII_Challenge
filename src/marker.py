@@ -103,8 +103,12 @@ def calculate_actual_distance_and_angle(pixel_offset, z_distance, focal_length):
     D = math.sqrt(X**2 + z_distance**2)
     
     return D, theta_deg
+
+
+#### MARKER DETECTION
+
 # Initialize the camera
-cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
 
 # Get an initial frame to initialize the MarkerDetector
 # ret, init_frame = cap.read()
@@ -139,16 +143,20 @@ cap = cv2.VideoCapture(0)
 
 # cap.release()
 # cv2.destroyAllWindows()
-import time
-start = time.time()
-subscriber = CronometerMQTT()
-subscriber.subscribe_topic("ProximoID")
-subscriber.subscribe_topic("TempoDecorrido")
-while True:
-    now = time.time()
-    TARGET_ID = subscriber.get_value_for_topic("ProximoID")
-    time_stamp = subscriber.get_value_for_topic("TempoDecorrido")
-    print(f"ID: {TARGET_ID}")
-    print(f"TIME: {time_stamp}")
-    if now - start > 10:
-        subscriber.publish("StopCronometro","true")
+
+#### WORKING MQTT
+
+# import time
+# start = time.time()
+# subscriber = CronometerMQTT()
+# subscriber.subscribe_topic("ProximoID")
+# subscriber.subscribe_topic("TempoDecorrido")
+# while True:
+#     now = time.time()
+#     TARGET_ID = subscriber.get_value_for_topic("ProximoID")
+#     time_stamp = subscriber.get_value_for_topic("TempoDecorrido")
+#     print(f"ID: {TARGET_ID}")
+#     print(f"TIME: {time_stamp}")
+#     time.sleep(1)
+#     if now - start > 10:
+#         subscriber.publish("StopCronometro","true")

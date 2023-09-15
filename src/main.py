@@ -46,7 +46,11 @@ class ControleTello:
                     self.detected_ids.add(aruco_id)
 
         return processed_frame
-
+    def missao_0(self):
+        lista_coordenadas = []
+        lista_coordenadas.append(((1, 0), 90))
+        lista_coordenadas.append(((0, 0), 180))
+        return lista_coordenadas       
     def missao_1(self):
         lista_coordenadas = []
         lista_coordenadas.append(((3, 0), 0))
@@ -96,10 +100,10 @@ class ControleTello:
             self.tello.land()
 
 if __name__ == "__main__":
-    altura_de_voo = 185
+    altura_de_voo = 30
     controle_tello = ControleTello(altura_de_voo)
     
-    missao = controle_tello.missao_1()  # ou missao_1()
+    missao = controle_tello.missao_0()  # ou missao_1()
     
     controle_tello.executar_missao(missao)
 
