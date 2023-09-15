@@ -1,3 +1,4 @@
+import keyboard
 from djitellopy import Tello
 from utils import cartesian_to_polar
 from marker import MarkerDetector, calculate_actual_distance_and_angle
@@ -22,6 +23,16 @@ class ControleTello:
         self.marker_detector = MarkerDetector(frame_read.frame)
         self.image_dir = "aruco_images"
         os.makedirs(self.image_dir, exist_ok=True)
+
+    def define_hotkeys(self):
+        keyboard.on_press_key("space", self.stop)
+
+    def stop(self, _):
+        self.tello.land()
+        self.tello.streamoff()
+        self.tello.end()
+        cv2.destroyAllWindows()
+        exit(1)
 
     def process_frame_for_markers(self):
         frame_read = self.tello.get_frame_read()
