@@ -3,6 +3,7 @@ from utils import cartesian_to_polar
 from marker import MarkerDetector, calculate_actual_distance_and_angle
 import time
 import cv2
+import os
 
 class ControleTello:
     def __init__(self, altura):
@@ -13,6 +14,7 @@ class ControleTello:
         time.sleep(1)
         self.tello.move_up(altura)
         self.x, self.y, self.yaw = 0, 0, 0
+        self.detected_ids = set()
 
         # Initialize the MarkerDetector
         frame_read = self.tello.get_frame_read()
@@ -21,10 +23,25 @@ class ControleTello:
     def process_frame_for_markers(self):
         frame_read = self.tello.get_frame_read()
         processed_frame, marker_data = self.marker_detector.process_frame(frame_read.frame)
+        
         if marker_data['Target'] is not None:
             for info in marker_data['Target']:
-                print(f"Target ID: {info['id']}, Distance: {info['distance']}, X Offset: {info['x_offset']}")
-                print(calculate_actual_distance_and_angle(info['x_offset'], info['distance'], 50))
+                aruco_id = info['id']
+                
+                # Check if this ID has been detected before
+                if aruco_id not in self.detected_ids:
+                    
+                    print(f"Target ID: {aruco_id}, Distance: {info['distance']}, X Offset: {info['x_offset']}")
+                    print(calculate_actual_distance_and_angle(info['x_offset'], info['distance'], 50))
+                    
+                    # Save the image
+                    image_path = os.path.join(self.image_dir, f"aruco_target_{aruco_id}.jpg")
+                    cv2.imwrite(image_path, processed_frame)
+                    print(f"Image saved at {image_path}")
+                    
+                    # Mark this ID as detected
+                    self.detected_ids.add(aruco_id)
+
         return processed_frame
 
     def missao_1(self):
