@@ -29,6 +29,7 @@ class ControleTello:
 
         self.tello.connect()
         time.sleep(1) 
+        print("batery: ", self.tello.get_battery())
         self.tello.streamon()
         time.sleep(1)
         self.tello.takeoff()
