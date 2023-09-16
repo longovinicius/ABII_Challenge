@@ -11,7 +11,9 @@ class ControleTello:
     def __init__(self, altura):
         self.tello = Tello()
         self.tello.connect()
+        time.sleep(1)
         self.tello.streamon()
+        time.sleep(1)
         self.tello.takeoff()
         time.sleep(1)
         self.tello.move_up(altura)
@@ -100,25 +102,17 @@ class ControleTello:
 
     def missao_2(self):
         return [
-            ((1, 0.60), -90),
-            ((1-0.49, 0.60+0.57), -90),
-            ((-0.49, 0.60+0.57), -90),
-            ((0, 0), 0),
+            ((100, 0), 0),
+            ((-100, 0), 0),
         ]
 
     def executar_missao(self, lista_coordenadas):
+        yaw_acumulado = 0
         for coords in lista_coordenadas:
             angulo_acumulado = 0
             (x_target, y_target), yaw_target = coords
-            x_mov, y_mov = (x_target - self.x, y_target - self.y)
+            yaw_target *= -1
             print(f"Initial Angle: {self.yaw}")
-            modulo, angulo = cartesian_to_polar(x_mov, y_mov)
-            print(f"Angulo Calculado Cartesiano: {angulo}")
-            self.x += x_target
-            self.y += y_target
-            
-            print(f"{angulo=}")
-            print(f"{modulo=}")
 
             # Process the frame for markers
             processed_frame = self.process_frame_for_markers()
@@ -130,22 +124,11 @@ class ControleTello:
 
             if self.tello:
                 time.sleep(1)
-                self.tello.go_xyz_speed(int(x_target*100), int(y_target * 100), 0, 40)
-                if yaw_target > 0:
-                    self.tello.rotate_clockwise(yaw_target)
-                else:
-                    self.tello.rotate_counter_clockwise(yaw_target)
-                # angulo_acumulado = angulo - self.yaw
-                # print(f"Angulo de movimentação 1: {angulo_acumulado}")
-                # self.tello.rotate_clockwise(angulo_acumulado)
-                # time.sleep(1)
-                # self.tello.move_forward(modulo)
-                # time.sleep(1)
-                # angulo_acumulado = yaw_target - angulo_acumulado - self.yaw
-                # print(f"Angulo de movimentação 2: {angulo_acumulado}")
-                # self.tello.rotate_clockwise(angulo_acumulado)
-                # time.sleep(1)
-                # self.yaw += angulo_acumulado
+                self.tello.go_xyz_speed(x=x_target, y=y_target, z=0, speed=60)
+                self.tello.rotate_clockwise(yaw_target)
+                yaw_acumulado += yaw_target
+                time.sleep(5)
+                self.tello.rotate_clockwise(-yaw_acumulado)
 
         if self.tello:
             self.tello.land()
@@ -155,6 +138,6 @@ if __name__ == "__main__":
     altura_de_voo = 70
     controle_tello = ControleTello(altura_de_voo)
 
-    missao = controle_tello.missao_1()  # ou missao_1()
+    missao = controle_tello.missao_2()  # ou missao_1()
 
     controle_tello.executar_missao(missao)
