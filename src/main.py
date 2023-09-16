@@ -11,10 +11,12 @@ from cronometer_mqtt import CronometerMQTT
 
 MQTT = True
 
+CERAMICA = 40
 
 class ControleTello:
     def __init__(self, altura):
 
+        self.coordinates = [0, 0]
         self.x, self.y, self.yaw = 0, 0, 0
         self.saved_picture_ids = set()
         self.Target_ID_saved = False
@@ -141,18 +143,13 @@ class ControleTello:
             ((1, 0), 270),
             ((0, 0), 300),
         ]
-
     def missao_2(self):
         return [
-            ((100, 0), 0),
-            ((-100, 0), 0),
-            ((100, 0), 0),
-            ((-100, 0), 0),
-            ((100, 0), 0),
-            ((-100, 0), 0),
-            ((100, 0), 0),
-            ((-100, 0), 0),
+            ((-CERAMICA*5, 0), 0),
+            ((-CERAMICA*10, -CERAMICA*8), 180),
+            ((-CERAMICA*12, 0), 0)
         ]
+
 
     def executar_missao(self, lista_coordenadas):
         yaw_acumulado = 0
@@ -169,7 +166,12 @@ class ControleTello:
 
             if self.tello:
                 time.sleep(1)
-                self.tello.go_xyz_speed(x=x_target, y=y_target, z=0, speed=60)
+                # Calculate relative coordinates
+                relative_x = x_target - self.coordinates[0]
+                relative_y = y_target - self.coordinates[1]
+                self.tello.go_xyz_speed(x=relative_x, y=relative_y, z=0, speed=60)
+                self.coordinates = [x_target, y_target]  # Update current coordinates
+
                 self.tello.rotate_clockwise(yaw_target)
                 yaw_acumulado += yaw_target
                 time.sleep(5)
