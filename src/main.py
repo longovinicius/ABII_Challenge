@@ -13,7 +13,9 @@ class ControleTello:
         self.tello.connect()
         self.tello.streamon()
         self.tello.takeoff()
-        time.sleep(1)
+        print("Bateria: ", self.tello.get_battery())
+        self.ceramica = 40
+        #time.sleep(1)
         self.tello.move_up(altura)
         self.x, self.y, self.yaw = 0, 0, 0
         self.detected_ids = set()
@@ -86,10 +88,10 @@ class ControleTello:
 
     def missao_2(self):
         return [
-            ((1, 0.60), -90),
-            ((1-0.49, 0.60+0.57), -90),
-            ((-0.49, 0.60+0.57), -90),
-            ((0, 0), 0),
+            ((-11*self.ceramica, 0), 0),
+            ((4*self.ceramica, 0), 0),
+            ((0, 8*self.ceramica), -180),
+            
         ]
 
     def executar_missao(self, lista_coordenadas):
