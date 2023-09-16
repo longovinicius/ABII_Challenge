@@ -1,4 +1,5 @@
 import threading
+from collections import defaultdict
 
 import keyboard
 from djitellopy import Tello
@@ -17,6 +18,9 @@ class ControleTello:
         self.x, self.y, self.yaw = 0, 0, 0
         self.saved_picture_ids = set()
         self.Target_ID_saved = False
+
+        # Glitch Strategy
+        self.marker_glitch = defaultdict(lambda: {"count": 0, "start_time": None})
 
         self.mqtt = CronometerMQTT()
         if MQTT:
@@ -61,40 +65,65 @@ class ControleTello:
             # Display the processed frame (optional)
             cv2.imshow("Processed Frame", processed_frame)
             cv2.waitKey(1)
-
             if marker_data["Target"] is None:  # identifica se há target
                 continue
 
             prox_id_aux = self.mqtt.prox_id
             for aruco in marker_data["Target"]:
-                print(aruco["id"])
+                if self.is_glitch(aruco["id"]):
+                    continue
+
                 self.mqtt.publish("IDAtual", aruco["id"])
+                print(aruco["id"])
+
                 # Teoricamente, aqui já é pra atualizar o Prox_ID
 
                 if aruco["id"] == self.mqtt.prox_id:
+                    # TODO: Lógica para o que fazer assim que o target é detectado
                     time.sleep(0.5)
                     while self.mqtt.prox_id == prox_id_aux:
                         # Possível Deadlock caso a Organização não atualize o ProxID
                         self.mqtt.publish("IDAtual", aruco["id"])
                         time.sleep(0.5)
-                    # TODO: Lógica para o que fazer assim que o target é detectado
-                    # TODO: Verificar por Glitch
                 elif isinstance(self.mqtt.prox_id, list):
                     # TODO: Lógica pro AMR!
                     pass
 
                 # Salvar imagem do Aruco detectado
                 # TODO: Salvar uns 3-5 de cada aruco
-                if aruco["id"] not in self.saved_picture_ids:
-                    image_path = os.path.join(
-                        self.image_dir, f"aruco_target_{aruco['id']}.jpg"
-                    )
-                    cv2.imwrite(image_path, processed_frame)
-                    print(f"Image saved at {image_path}")
+                self.save_picture(aruco["id"], processed_frame)
 
-                    # Mark this ID as detected
-                    self.saved_picture_ids.add(aruco["id"])
-                    self.Target_ID_saved = True
+                # Reset counter and time for Glitch logic
+                self.marker_glitch[aruco["id"]]["count"] = 0
+                self.marker_glitch[aruco["id"]]["start_time"] = None
+        self.stop(None)
+
+    def is_glitch(self, aruco_id):
+        if self.marker_glitch[aruco_id]["start_time"] is None:
+            self.marker_glitch[aruco_id]["start_time"] = time.time()
+
+        self.marker_glitch[aruco_id]["count"] += 1
+
+        if self.marker_glitch[aruco_id]["count"] < 5:
+            return True
+        if time.time() - self.marker_glitch[aruco_id]["start_time"] > 2:
+            self.marker_glitch[aruco_id]["count"] = 0
+            self.marker_glitch[aruco_id]["start_time"] = None
+            return True
+        return False
+
+    def save_picture(self, aruco_id, frame):
+        if aruco_id not in self.saved_picture_ids:
+            # TODO: add timestamp to image
+            image_path = os.path.join(
+                self.image_dir, f"aruco_target_{aruco_id}.jpg"
+            )
+            cv2.imwrite(image_path, frame)
+            print(f"Image saved at {image_path}")
+
+            # Mark this ID as detected
+            self.saved_picture_ids.add(aruco_id)
+            self.Target_ID_saved = True
 
     def change_Target(self, new_ID):
         self.Target_ID_saved = False
@@ -151,7 +180,7 @@ class ControleTello:
 
 
 if __name__ == "__main__":
-    altura_de_voo = 70
+    altura_de_voo = 30
     controle_tello = ControleTello(altura_de_voo)
 
     missao = controle_tello.missao_2()  # ou missao_1()
