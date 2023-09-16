@@ -35,7 +35,8 @@ class ControleTello:
         time.sleep(1)
         self.tello.takeoff()
         time.sleep(1)
-        self.tello.move_up(altura)
+        self.tello.move_up(altura/2)
+        self.tello.move_up(altura/2)
 
         frame_read = self.tello.get_frame_read()
         self.marker_detector = MarkerDetector(frame_read.frame)
@@ -139,15 +140,13 @@ class ControleTello:
 
     def missao_1(self):
         return [
-            ((0.5, 0), 90),
-            ((1, 0), 270),
-            ((0, 0), 300),
+            ((CERAMICA*0, 0), 0)
         ]
     def missao_2(self):
         return [
             ((-CERAMICA*5, 0), 0),
-            ((-CERAMICA*10, -CERAMICA*8), 180),
-            ((-CERAMICA*12, 0), 0)
+            ((-CERAMICA*10, 0), 0),
+            ((-CERAMICA*16, -CERAMICA*4), 150)
         ]
 
 
@@ -158,7 +157,6 @@ class ControleTello:
         for coords in lista_coordenadas:
             angulo_acumulado = 0
             (x_target, y_target), yaw_target = coords
-            yaw_target *= -1
             print(f"Initial Angle: {self.yaw}")
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -170,6 +168,7 @@ class ControleTello:
                 relative_x = x_target - self.coordinates[0]
                 relative_y = y_target - self.coordinates[1]
                 self.tello.go_xyz_speed(x=relative_x, y=relative_y, z=0, speed=60)
+                print(f"Bateria: {self.tello.get_battery()}")
                 self.coordinates = [x_target, y_target]  # Update current coordinates
 
                 self.tello.rotate_clockwise(yaw_target)
@@ -182,7 +181,7 @@ class ControleTello:
 
 
 if __name__ == "__main__":
-    altura_de_voo = 30
+    altura_de_voo = 140
     controle_tello = ControleTello(altura_de_voo)
 
     missao = controle_tello.missao_2()  # ou missao_1()
