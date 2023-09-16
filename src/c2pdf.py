@@ -3,12 +3,17 @@ from PIL import Image
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
+
 def convert_images_to_pdf(input_dir, output_pdf):
     # Lista todos os arquivos no diretório de entrada
     files = os.listdir(input_dir)
 
     # Filtra apenas os arquivos de imagem (extensões suportadas)
-    image_files = [file for file in files if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
+    image_files = [
+        file
+        for file in files
+        if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))
+    ]
 
     # Abre o arquivo PDF para escrita
     c = canvas.Canvas(output_pdf, pagesize=letter)
@@ -36,6 +41,7 @@ def convert_images_to_pdf(input_dir, output_pdf):
 
     # Fecha o arquivo PDF
     c.save()
+
 
 if __name__ == "__main__":
     input_directory = "aruco_images/aruco_target_4.jpg"  # Substitua pelo caminho do seu diretório de imagens
