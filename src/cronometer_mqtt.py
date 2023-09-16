@@ -1,40 +1,57 @@
 import paho.mqtt.client as mqtt
 
-# Configurações globais do broker
-BROKER_ADDRESS = "192.168.0.2"
-PORT = 1883
-
 
 class CronometerMQTT:
-    def __init__(self):
+    def __init__(self, host="127.0.0.1", port=1883):
+        self.host = host
+        self.port = port
+
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        self.topics = {}
-        self.connect()
 
-    def connect(self):
-        self.client.connect(BROKER_ADDRESS, PORT, 60)
-        self.client.loop_start()
+        self.prox_id = 1
+        self.tempos = {}
 
     def on_connect(self, client, userdata, flags, rc):
-        print(f"Conectado com código de resultado {rc}")
-        for topic in self.topics:
-            client.subscribe(topic)
-            print(f"Subscrito ao tópico: {topic}")
+        """Callback function to handle the connection"""
+        __mqtt_rc = {
+            0: "Connection successful",
+            1: "Connection refused - incorrect protocol version",
+            2: "Connection refused - invalid client identifier",
+            3: "Connection refused - server unavailable",
+            4: "Connection refused - bad username or password",
+            5: "Connection refused - not authorised",
+        }
+        print(__mqtt_rc.get(rc))
+        if rc == 0:
+            self.client.subscribe("ProximoID", qos=1)
+            self.client.subscribe("TempoDecorrido", qos=1)
 
     def on_message(self, client, userdata, msg):
         print(f"Nova mensagem recebida no tópico {msg.topic}: {msg.payload.decode()}")
         # Armazenar valores em variáveis de acordo com os tópicos
-        if msg.topic in self.topics:
-            self.topics[msg.topic] = msg.payload.decode()
+        payload = msg.payload.decode()
+        if msg.topic == "ProximoID":
+            try:
+                self.prox_id = int(payload)
+            except ValueError:
+                self.prox_id = eval(payload)
+            finally:
+                print(f"Next ID: {self.prox_id}")
 
-    def subscribe_topic(self, topic):
-        self.topics[topic] = None
-        self.client.subscribe(topic)
-
-    def get_value_for_topic(self, topic):
-        return self.topics.get(topic)
+        elif msg.topic == "TempoDecorrido":
+            self.tempos[self.prox_id] = payload
+            print(f"Tempos decorridos: {self.tempos}")
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload, qos=1)
+
+    def start(self):
+        """Start the MQTT client"""
+        self.client.connect(self.host, self.port, 60)
+        self.client.loop_start()
+
+    def stop(self):
+        """Stop the MQTT client"""
+        self.client.loop_stop()
