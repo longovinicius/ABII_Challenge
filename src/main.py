@@ -86,14 +86,10 @@ class ControleTello:
 
     def missao_2(self):
         return [
-            ((2, 0), 0),
-            ((0, 2), 0),
-            ((3, 0), 90),
-            ((1, 0), 0),
-            ((0, 1), 90),
-            ((0, 1), 0),
-            ((-1, 0), 90),
-            ((-2, 0), 90),
+            ((1, 0.60), -90),
+            ((1-0.49, 0.60+0.57), -90),
+            ((-0.49, 0.60+0.57), -90),
+            ((0, 0), 0),
         ]
 
     def executar_missao(self, lista_coordenadas):
@@ -120,17 +116,22 @@ class ControleTello:
 
             if self.tello:
                 time.sleep(1)
-                angulo_acumulado = angulo - self.yaw
-                print(f"Angulo de movimentação 1: {angulo_acumulado}")
-                self.tello.rotate_clockwise(angulo_acumulado)
-                time.sleep(1)
-                self.tello.move_forward(modulo)
-                time.sleep(1)
-                angulo_acumulado = yaw_target - angulo_acumulado - self.yaw
-                print(f"Angulo de movimentação 2: {angulo_acumulado}")
-                self.tello.rotate_clockwise(angulo_acumulado)
-                time.sleep(1)
-                self.yaw += angulo_acumulado
+                self.tello.go_xyz_speed(int(x_target*100), int(y_target * 100), 0, 40)
+                if yaw_target > 0:
+                    self.tello.rotate_clockwise(yaw_target)
+                else:
+                    self.tello.rotate_counter_clockwise(yaw_target)
+                # angulo_acumulado = angulo - self.yaw
+                # print(f"Angulo de movimentação 1: {angulo_acumulado}")
+                # self.tello.rotate_clockwise(angulo_acumulado)
+                # time.sleep(1)
+                # self.tello.move_forward(modulo)
+                # time.sleep(1)
+                # angulo_acumulado = yaw_target - angulo_acumulado - self.yaw
+                # print(f"Angulo de movimentação 2: {angulo_acumulado}")
+                # self.tello.rotate_clockwise(angulo_acumulado)
+                # time.sleep(1)
+                # self.yaw += angulo_acumulado
 
         if self.tello:
             self.tello.land()
