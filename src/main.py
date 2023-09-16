@@ -1,15 +1,28 @@
+import threading
+
 import keyboard
 from djitellopy import Tello
-from utils import cartesian_to_polar
-from marker import MarkerDetector, calculate_actual_distance_and_angle
+from marker import MarkerDetector
 import time
 import cv2
 import os
 from cronometer_mqtt import CronometerMQTT
 
+MQTT = True
+
+
 class ControleTello:
     def __init__(self, altura):
+
+        self.x, self.y, self.yaw = 0, 0, 0
+        self.saved_picture_ids = set()
+        self.Target_ID_saved = False
+
+        self.mqtt = CronometerMQTT()
+        if MQTT:
+            self.mqtt.start()
         self.tello = Tello()
+
         self.tello.connect()
         time.sleep(1)
         self.tello.streamon()
@@ -17,17 +30,12 @@ class ControleTello:
         self.tello.takeoff()
         time.sleep(1)
         self.tello.move_up(altura)
-        self.x, self.y, self.yaw = 0, 0, 0
-        self.saved_picture_ids = []
-        self.detected_ids = []
-        self.Target_ID_saved = False
 
-        # Initialize the MarkerDetector
         frame_read = self.tello.get_frame_read()
         self.marker_detector = MarkerDetector(frame_read.frame)
+
         self.image_dir = "aruco_images"
         self.read_ID = 1
-        self.Target_ID = 1
         os.makedirs(self.image_dir, exist_ok=True)
 
         self.define_hotkeys()
@@ -40,48 +48,53 @@ class ControleTello:
         self.tello.streamoff()
         self.tello.end()
         cv2.destroyAllWindows()
+        self.mqtt.stop()
         exit(1)
 
     def process_frame_for_markers(self):
+        while True:
+            time.sleep(0.01)
+            processed_frame, marker_data = self.marker_detector.process_frame(
+                self.tello.get_frame_read().frame
+            )
 
-        self.detected_ids = []
+            # Display the processed frame (optional)
+            cv2.imshow("Processed Frame", processed_frame)
+            cv2.waitKey(1)
 
-        frame_read = self.tello.get_frame_read()
-        processed_frame, marker_data = self.marker_detector.process_frame(
-            frame_read.frame
-        )
+            if marker_data["Target"] is None:  # identifica se há target
+                continue
 
-        if marker_data["Target"] is None:  # identifica se há target
-            return processed_frame
+            prox_id_aux = self.mqtt.prox_id
+            for aruco in marker_data["Target"]:
+                print(aruco["id"])
+                self.mqtt.publish("IDAtual", aruco["id"])
+                # Teoricamente, aqui já é pra atualizar o Prox_ID
 
-        for info in marker_data["Target"]:
-            aruco_id = info["id"]
+                if aruco["id"] == self.mqtt.prox_id:
+                    time.sleep(0.5)
+                    while self.mqtt.prox_id == prox_id_aux:
+                        # Possível Deadlock caso a Organização não atualize o ProxID
+                        self.mqtt.publish("IDAtual", aruco["id"])
+                        time.sleep(0.5)
+                    # TODO: Lógica para o que fazer assim que o target é detectado
+                    # TODO: Verificar por Glitch
+                elif isinstance(self.mqtt.prox_id, list):
+                    # TODO: Lógica pro AMR!
+                    pass
 
-            self.detected_ids.append(aruco_id)  # Armazena target em detected_ids
-            if aruco_id == self.Target_ID:
-                subscriber.publish("Proximo_ID", aruco_id)
-                time.sleep(0.5)
-                subscriber.get_value_for_topic()
+                # Salvar imagem do Aruco detectado
+                # TODO: Salvar uns 3-5 de cada aruco
+                if aruco["id"] not in self.saved_picture_ids:
+                    image_path = os.path.join(
+                        self.image_dir, f"aruco_target_{aruco['id']}.jpg"
+                    )
+                    cv2.imwrite(image_path, processed_frame)
+                    print(f"Image saved at {image_path}")
 
-            if aruco_id not in self.saved_picture_ids:
-                image_path = os.path.join(self.image_dir, f"aruco_target_{aruco_id}.jpg")
-                cv2.imwrite(image_path, processed_frame)
-                print(f"Image saved at {image_path}")
-
-                # Mark this ID as detected
-                self.detected_ids.add(aruco_id)
-                self.Target_ID_saved = True
-
-            # if aruco_id == self.Target_ID:
-            #     image_path = os.path.join(self.image_dir, f"aruco_target_{aruco_id}.jpg")
-            #     cv2.imwrite(image_path, processed_frame)
-            #     print(f"Image saved at {image_path}")
-
-            #     # Mark this ID as detected
-            #     self.detected_ids.add(aruco_id)
-            #     self.Target_ID_saved = True
-
-        return processed_frame
+                    # Mark this ID as detected
+                    self.saved_picture_ids.add(aruco["id"])
+                    self.Target_ID_saved = True
 
     def change_Target(self, new_ID):
         self.Target_ID_saved = False
@@ -104,21 +117,24 @@ class ControleTello:
         return [
             ((100, 0), 0),
             ((-100, 0), 0),
+            ((100, 0), 0),
+            ((-100, 0), 0),
+            ((100, 0), 0),
+            ((-100, 0), 0),
+            ((100, 0), 0),
+            ((-100, 0), 0),
         ]
 
     def executar_missao(self, lista_coordenadas):
         yaw_acumulado = 0
+        threading.Thread(target=self.process_frame_for_markers, daemon=True).start()
+
         for coords in lista_coordenadas:
             angulo_acumulado = 0
             (x_target, y_target), yaw_target = coords
             yaw_target *= -1
             print(f"Initial Angle: {self.yaw}")
 
-            # Process the frame for markers
-            processed_frame = self.process_frame_for_markers()
-
-            # Display the processed frame (optional)
-            # cv2.imshow("Processed Frame", processed_frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 
