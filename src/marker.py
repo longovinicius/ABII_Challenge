@@ -138,39 +138,39 @@ def calculate_actual_distance_and_angle(pixel_offset, z_distance, focal_length):
     return D, theta_deg
 
 
-### MARKER DETECTION
+## MARKER DETECTION
 
 
-# cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0)
 
-# ret, init_frame = cap.read()
-# if not ret:
-#     print("Failed to get the initial frame.")
-#     exit()
+ret, init_frame = cap.read()
+if not ret:
+    print("Failed to get the initial frame.")
+    exit()
 
-# # Initialize the marker detector
-# marker_detector = MarkerDetector(init_frame, target_marker_width=0.10, nav_marker_width=0.27)
+# Initialize the marker detector
+marker_detector = MarkerDetector(init_frame, target_marker_width=0.10, nav_marker_width=0.27)
 
-# while True:
-#     ret, frame = cap.read()
-#     if not ret:
-#         print("Failed to capture the frame. Exiting...")
-#         break
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Failed to capture the frame. Exiting...")
+        break
 
-#     processed_frame, marker_data = marker_detector.process_frame(frame)
+    processed_frame, marker_data = marker_detector.process_frame(frame)
 
-#     if marker_data['Target'] is not None:  # Check if not None before iterating
-#         for info in marker_data['Target']:
-#             print(f"Target ID: {info['id']}, Distance: {info['distance']}, X Distance: {info['x_distance']}, Y Distance: {info['y_distance']}, X Offset: {info['x_offset']}")
-#             print(calculate_actual_distance_and_angle(info['x_offset'], info['distance'], 50))
+    if marker_data['Target'] is not None:  # Check if not None before iterating
+        for info in marker_data['Target']:
+            print(f"Target ID: {info['id']}, Distance: {info['distance']}, X Distance: {info['x_distance']}, Y Distance: {info['y_distance']}, X Offset: {info['x_offset']}")
+            print(calculate_actual_distance_and_angle(info['x_offset'], info['distance'], 50))
 
-#     if marker_data['Navigation'] is not None:  # Check if not None before iterating
-#         for info in marker_data['Navigation']:
-#             print(f"Navigation ID: {info['id']}, Distance: {info['distance']}, X Offset: {info['x_offset']}")
+    if marker_data['Navigation'] is not None:  # Check if not None before iterating
+        for info in marker_data['Navigation']:
+            print(f"Navigation ID: {info['id']}, Distance: {info['distance']}, X Offset: {info['x_offset']}")
 
-#     cv2.imshow("ArUco Markers", processed_frame)
-#     if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
+    cv2.imshow("ArUco Markers", processed_frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 
 # cap.release()

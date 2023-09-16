@@ -22,6 +22,8 @@ class ControleTello:
         self.Target_ID_saved = False
         self.should_stop = threading.Event()
         self.should_stop.clear()
+        self.is_AMR = False
+        self.AMR_dist = None
 
         # Glitch Strategy
         self.marker_glitch = defaultdict(lambda: {"count": 0, "start_time": None})
@@ -102,6 +104,9 @@ class ControleTello:
                     timestamp = self.mqtt.tempo_decorrido
                     self.save_picture(aruco["id"], processed_frame, timestamp)
                 elif isinstance(self.mqtt.prox_id, list):
+                    if aruco['id'] == self.mqtt.prox_id[0]:
+                        self.AMR_dist = self.aruco['distance']
+
                     # TODO: Lógica pro AMR!
                     # Vai para posição próxima ao AMR
                     # Olha pra frente
@@ -178,15 +183,27 @@ class ControleTello:
     def executar_missao(self, lista_coordenadas):
         threading.Thread(target=self.process_frame_for_markers, daemon=True).start()
 
-        for coords in lista_coordenadas:
+        for i, coords in enumerate(lista_coordenadas):
             if self.should_stop.is_set():
                 break
             yaw_acumulado = 0
-            angulo_acumulado = 0
             (x_target, y_target), yaw_target = coords
             print(f"Initial Angle: {self.yaw}")
 
             if self.tello:
+                if i == 5:
+                    self.is_AMR = True
+                    self.tello.move_down(150)
+                    while self.AMR_dist is None:
+                        time.sleep(3)
+                    # Andar em X ateh que amr dist seja 30
+                    # amr dist - 30
+                    self.tello.go_xyz_speed(x=int(self.AMR_dist*100)-30, y=0, z=0, speed=40)
+                    self.AMR_dist = None
+                    # Esperar o aruco 22 do amr aparecer novamente
+                    while self.AMR_dist is None:
+                        time.sleep(0.01)
+                    self.tello.emergency()
                 # Calculate relative coordinates
                 relative_x = x_target - self.coordinates[0]
                 relative_y = y_target - self.coordinates[1]
