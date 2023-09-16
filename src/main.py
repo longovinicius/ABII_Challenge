@@ -5,7 +5,7 @@ from marker import MarkerDetector, calculate_actual_distance_and_angle
 import time
 import cv2
 import os
-
+from cronometer_mqtt import CronometerMQTT
 
 class ControleTello:
     def __init__(self, altura):
@@ -16,12 +16,16 @@ class ControleTello:
         time.sleep(1)
         #self.tello.move_up(altura)
         self.x, self.y, self.yaw_atual = 0, 0, 0
-        self.detected_ids = set()
+        self.saved_picture_ids = []
+        self.detected_ids = []
+        self.Target_ID_saved = False
 
         # Initialize the MarkerDetector
         frame_read = self.tello.get_frame_read()
         self.marker_detector = MarkerDetector(frame_read.frame)
         self.image_dir = "aruco_images"
+        self.read_ID = 1
+        self.Target_ID = 1
         os.makedirs(self.image_dir, exist_ok=True)
 
     def define_hotkeys(self):
@@ -35,39 +39,49 @@ class ControleTello:
         exit(1)
 
     def process_frame_for_markers(self):
+
+        self.detected_ids = []
+
         frame_read = self.tello.get_frame_read()
         processed_frame, marker_data = self.marker_detector.process_frame(
             frame_read.frame
         )
 
-        if marker_data["Target"] is None:
-            return processed_frame
+        if marker_data["Target"] is None:  # identifica se há target
+            return processed_frame 
 
         for info in marker_data["Target"]:
             aruco_id = info["id"]
 
-            if aruco_id in self.detected_ids:
-                continue
+            self.detected_ids.append(aruco_id)  # Armazena target em detected_ids
+            if aruco_id == self.Target_ID:
+                subscriber.publish("Proximo_ID", aruco_id)
+                time.sleep(0.5)
+                subscriber.get_value_for_topic()
 
-            # Check if this ID has been detected before
-            print(
-                f"Target ID: {aruco_id}, Distance: {info['distance']}, X Offset: {info['x_offset']}"
-            )
-            print(
-                calculate_actual_distance_and_angle(
-                    info["x_offset"], info["distance"], 50
-                )
-            )
+            if aruco_id not in self.saved_picture_ids:
+                image_path = os.path.join(self.image_dir, f"aruco_target_{aruco_id}.jpg")
+                cv2.imwrite(image_path, processed_frame)
+                print(f"Image saved at {image_path}")
 
-            # Save the image
-            image_path = os.path.join(self.image_dir, f"aruco_target_{aruco_id}.jpg")
-            cv2.imwrite(image_path, processed_frame)
-            print(f"Image saved at {image_path}")
+                # Mark this ID as detected
+                self.detected_ids.add(aruco_id)
+                self.Target_ID_saved = True
 
-            # Mark this ID as detected
-            self.detected_ids.add(aruco_id)
+            # if aruco_id == self.Target_ID: 
+            #     image_path = os.path.join(self.image_dir, f"aruco_target_{aruco_id}.jpg")
+            #     cv2.imwrite(image_path, processed_frame)
+            #     print(f"Image saved at {image_path}")
+
+            #     # Mark this ID as detected
+            #     self.detected_ids.add(aruco_id)
+            #     self.Target_ID_saved = True
 
         return processed_frame
+    
+    def change_Target(self, new_ID):
+        self.Target_ID_saved = False
+        self.Target_ID = new_ID
 
     def missao_0(self):
         return [
@@ -135,7 +149,21 @@ class ControleTello:
 
 
 if __name__ == "__main__":
-    altura_de_voo = 30
+    import time
+    start = time.time()
+    subscriber = CronometerMQTT()
+    subscriber.subscribe_topic("ProximoID")
+    subscriber.subscribe_topic("TempoDecorrido")
+    while True:
+        now = time.time()
+        TARGET_ID = subscriber.get_value_for_topic("ProximoID")
+        time_stamp = subscriber.get_value_for_topic("TempoDecorrido")
+        print(f"ID: {TARGET_ID}")
+        print(f"TIME: {time_stamp}")
+        time.sleep(1)
+        if now - start > 10:
+            subscriber.publish("StopCronometro","true")
+        altura_de_voo = 30
     controle_tello = ControleTello(altura_de_voo)
 
     missao = controle_tello.missao_0()  # ou missao_1()

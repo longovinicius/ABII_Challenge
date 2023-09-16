@@ -38,7 +38,7 @@ def convert_images_to_pdf(input_dir, output_pdf):
     c.save()
 
 if __name__ == "__main__":
-    input_directory = "./imgs"  # Substitua pelo caminho do seu diretório de imagens
+    input_directory = "aruco_images/aruco_target_4.jpg"  # Substitua pelo caminho do seu diretório de imagens
     output_pdf = "saida.pdf"  # Caminho para o arquivo PDF de saída
 
     convert_images_to_pdf(input_directory, output_pdf)

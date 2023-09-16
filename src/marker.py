@@ -177,17 +177,17 @@ def calculate_actual_distance_and_angle(pixel_offset, z_distance, focal_length):
 
 #### WORKING MQTT
 
-# import time
-# start = time.time()
-# subscriber = CronometerMQTT()
-# subscriber.subscribe_topic("ProximoID")
-# subscriber.subscribe_topic("TempoDecorrido")
-# while True:
-#     now = time.time()
-#     TARGET_ID = subscriber.get_value_for_topic("ProximoID")
-#     time_stamp = subscriber.get_value_for_topic("TempoDecorrido")
-#     print(f"ID: {TARGET_ID}")
-#     print(f"TIME: {time_stamp}")
-#     time.sleep(1)
-#     if now - start > 10:
-#         subscriber.publish("StopCronometro","true")
+import time
+start = time.time()
+subscriber = CronometerMQTT()
+subscriber.subscribe_topic("ProximoID")
+subscriber.subscribe_topic("TempoDecorrido")
+while True:
+    now = time.time()
+    TARGET_ID = subscriber.get_value_for_topic("ProximoID")
+    time_stamp = subscriber.get_value_for_topic("TempoDecorrido")
+    print(f"ID: {TARGET_ID}")
+    print(f"TIME: {time_stamp}")
+    time.sleep(1)
+    if now - start > 10:
+        subscriber.publish("StopCronometro","true")
