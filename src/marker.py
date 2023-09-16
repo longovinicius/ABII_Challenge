@@ -113,6 +113,8 @@ class MarkerDetector:
                 {
                     "id": int(aruco_id),
                     "distance": float(z_string),
+                    "x_distance": float(f"{tran_vec[0][0]:.2f}"),
+                    "y_distance": float(f"{tran_vec[0][1]:.2f}"),
                     "x_offset": float(x_offset),
                 }
             )
@@ -136,12 +138,11 @@ def calculate_actual_distance_and_angle(pixel_offset, z_distance, focal_length):
     return D, theta_deg
 
 
-#### MARKER DETECTION
+### MARKER DETECTION
 
-# Initialize the camera
+
 # cap = cv2.VideoCapture(0)
 
-# Get an initial frame to initialize the MarkerDetector
 # ret, init_frame = cap.read()
 # if not ret:
 #     print("Failed to get the initial frame.")
@@ -160,7 +161,7 @@ def calculate_actual_distance_and_angle(pixel_offset, z_distance, focal_length):
 
 #     if marker_data['Target'] is not None:  # Check if not None before iterating
 #         for info in marker_data['Target']:
-#             print(f"Target ID: {info['id']}, Distance: {info['distance']}, X Offset: {info['x_offset']}")
+#             print(f"Target ID: {info['id']}, Distance: {info['distance']}, X Distance: {info['x_distance']}, Y Distance: {info['y_distance']}, X Offset: {info['x_offset']}")
 #             print(calculate_actual_distance_and_angle(info['x_offset'], info['distance'], 50))
 
 #     if marker_data['Navigation'] is not None:  # Check if not None before iterating
