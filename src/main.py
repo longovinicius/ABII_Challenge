@@ -20,6 +20,8 @@ class ControleTello:
         self.x, self.y, self.yaw = 0, 0, 0
         self.saved_picture_ids = set()
         self.Target_ID_saved = False
+        self.should_stop = threading.Event()
+        self.should_stop.clear()
 
         # Glitch Strategy
         self.marker_glitch = defaultdict(lambda: {"count": 0, "start_time": None})
@@ -27,16 +29,18 @@ class ControleTello:
         self.mqtt = CronometerMQTT()
         if MQTT:
             self.mqtt.start()
-        self.tello = Tello()
+        self.tello = Tello(retry_count=10)
+        Tello.RESPONSE_TIMEOUT = 20
 
         self.tello.connect()
         time.sleep(1)
+        print(f"Bateria: {self.tello.get_battery()}")
         self.tello.streamon()
         time.sleep(1)
         self.tello.takeoff()
         time.sleep(1)
-        self.tello.move_up(altura/2)
-        self.tello.move_up(altura/2)
+        self.tello.move_up(altura)
+        time.sleep(1)
 
         frame_read = self.tello.get_frame_read()
         self.marker_detector = MarkerDetector(frame_read.frame)
@@ -51,15 +55,14 @@ class ControleTello:
         keyboard.on_press_key("space", self.stop)
 
     def stop(self, _):
-        self.tello.land()
-        self.tello.streamoff()
+        self.should_stop.set()
         self.tello.end()
         cv2.destroyAllWindows()
         self.mqtt.stop()
         exit(1)
 
     def process_frame_for_markers(self):
-        while True:
+        while not self.should_stop.is_set():
             time.sleep(0.01)
             processed_frame, marker_data = self.marker_detector.process_frame(
                 self.tello.get_frame_read().frame
@@ -73,11 +76,18 @@ class ControleTello:
 
             prox_id_aux = self.mqtt.prox_id
             for aruco in marker_data["Target"]:
+                if self.should_stop.is_set():
+                    break
                 if self.is_glitch(aruco["id"]):
                     continue
 
                 self.mqtt.publish("IDAtual", aruco["id"])
                 print(aruco["id"])
+
+                # TODO: Logica para voltar a um Waypoint especifico
+                # TODO: Logica para armazenar os arucos detectados em um determinado waypoint
+                # TODO: Logica para adaptar a trajetoria de waypoints
+                #   I.e., se o prox aruco for um aruco já antes detectado
 
                 # Teoricamente, aqui já é pra atualizar o Prox_ID
 
@@ -90,6 +100,7 @@ class ControleTello:
                         self.mqtt.publish("IDAtual", aruco["id"])
                         time.sleep(0.5)
                     timestamp = self.mqtt.tempo_decorrido
+                    self.save_picture(aruco["id"], processed_frame, timestamp)
                 elif isinstance(self.mqtt.prox_id, list):
                     # TODO: Lógica pro AMR!
                     # Vai para posição próxima ao AMR
@@ -101,7 +112,7 @@ class ControleTello:
 
                 # Salvar imagem do Aruco detectado
                 # TODO: Salvar uns 3-5 de cada aruco
-                self.save_picture(aruco["id"], processed_frame, timestamp)
+                # self.save_picture(aruco["id"], processed_frame, timestamp)
 
                 # Reset counter and time for Glitch logic
                 self.marker_glitch[aruco["id"]]["count"] = 0
@@ -126,8 +137,10 @@ class ControleTello:
         if aruco_id not in self.saved_picture_ids:
             # TODO: add timestamp to image
             image_path = os.path.join(
-                self.image_dir, f"aruco_target_{aruco_id}_{timestamp or ''}.jpg"
+                self.image_dir, f"aruco_target_{aruco_id} _.jpg"
             )
+            # with open("timestamps.txt", "w") as f:
+            #     f.write(timestamp)
             cv2.imwrite(image_path, frame)
             print(f"Image saved at {image_path}")
 
@@ -152,42 +165,47 @@ class ControleTello:
     def missao_2(self):
         return [
             ((-CERAMICA*5, 0), 0),
-            ((-CERAMICA*10, 0), 0),
-            ((-CERAMICA*16, -CERAMICA*4), 150)
+            ((-CERAMICA*10, -CERAMICA*2), 0),
+            ((-CERAMICA*16, -CERAMICA*4), 150),
+            ((-CERAMICA*8, -CERAMICA*9), -45),
+            ((-CERAMICA*8, -CERAMICA*9), 45),
+            ((-CERAMICA*8, -CERAMICA*18), -45),
+            ((0, -CERAMICA*9), 135),
+            ((0, -CERAMICA*9), -135),
+
         ]
 
-
     def executar_missao(self, lista_coordenadas):
-        yaw_acumulado = 0
         threading.Thread(target=self.process_frame_for_markers, daemon=True).start()
 
         for coords in lista_coordenadas:
+            if self.should_stop.is_set():
+                break
+            yaw_acumulado = 0
             angulo_acumulado = 0
             (x_target, y_target), yaw_target = coords
             print(f"Initial Angle: {self.yaw}")
 
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-
             if self.tello:
-                time.sleep(1)
                 # Calculate relative coordinates
                 relative_x = x_target - self.coordinates[0]
                 relative_y = y_target - self.coordinates[1]
-                self.tello.go_xyz_speed(x=relative_x, y=relative_y, z=0, speed=60)
+                if not(relative_x == 0 and relative_y == 0):
+                    self.tello.go_xyz_speed(x=relative_x, y=relative_y, z=0, speed=60)
                 print(f"Bateria: {self.tello.get_battery()}")
                 self.coordinates = [x_target, y_target]  # Update current coordinates
                 self.tello.rotate_clockwise(yaw_target)
                 yaw_acumulado += yaw_target
-                time.sleep(5)
-                self.tello.rotate_clockwise(-yaw_acumulado)
+                if yaw_target != 0:
+                    time.sleep(2)
+                    self.tello.rotate_clockwise(-yaw_acumulado)
 
         if self.tello:
-            self.tello.land()
+            self.tello.end()
 
 
 if __name__ == "__main__":
-    altura_de_voo = 140
+    altura_de_voo = 210
     controle_tello = ControleTello(altura_de_voo)
 
     missao = controle_tello.missao_2()  # ou missao_1()

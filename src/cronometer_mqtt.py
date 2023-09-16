@@ -29,7 +29,6 @@ class CronometerMQTT:
             self.client.subscribe("TempoDecorrido", qos=1)
 
     def on_message(self, client, userdata, msg):
-        print(f"Nova mensagem recebida no tópico {msg.topic}: {msg.payload.decode()}")
         # Armazenar valores em variáveis de acordo com os tópicos
         payload = msg.payload.decode()
         if msg.topic == "ProximoID":
@@ -42,7 +41,6 @@ class CronometerMQTT:
 
         elif msg.topic == "TempoDecorrido":
             self.tempo_decorrido = payload
-            print(f"Tempo decorrido: {self.tempo_decorrido}")
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload, qos=1)
