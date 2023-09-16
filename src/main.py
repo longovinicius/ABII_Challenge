@@ -159,8 +159,7 @@ class ControleTello:
 
     def missao_0(self):
         return [
-            ((1, 0), 0),
-            ((0, 0), 0),
+            ((0, 0), 0)
         ]
 
     def missao_1(self):
@@ -191,7 +190,7 @@ class ControleTello:
             print(f"Initial Angle: {self.yaw}")
 
             if self.tello:
-                if i == 5:
+                if i == 0:
                     self.is_AMR = True
                     self.tello.move_down(150)
                     while self.AMR_dist is None:
@@ -225,6 +224,6 @@ if __name__ == "__main__":
     altura_de_voo = 210
     controle_tello = ControleTello(altura_de_voo)
 
-    missao = controle_tello.missao_2()  # ou missao_1()
+    missao = controle_tello.missao_0()  # ou missao_1()
 
     controle_tello.executar_missao(missao)
