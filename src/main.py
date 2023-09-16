@@ -7,6 +7,8 @@ import cv2
 import os
 from cronometer_mqtt import CronometerMQTT
 
+CERAMICA = 40
+
 class ControleTello:
     def __init__(self, altura):
         self.tello = Tello()
@@ -16,7 +18,7 @@ class ControleTello:
         time.sleep(1)
         self.tello.takeoff()
         time.sleep(1)
-        self.tello.move_up(altura)
+        #self.tello.move_up(altura)
         self.coordinates = [0, 0]
         # self.x, self.y, self.yaw = 0, 0, 0
         self.saved_picture_ids = []
@@ -89,11 +91,13 @@ class ControleTello:
             ((1, 0), 270),
             ((0, 0), 300),
         ]
-
+    
     def missao_2(self):
         return [
-            ((100, 0), 0),
-            ((0, 0), 0),
+            ((-CERAMICA*12, 0), 0),
+            ((-CERAMICA*16, -CERAMICA*8), 180),
+            ((-CERAMICA*12, 0), 0),
+            ((0, 0), 0)
         ]
 
     def executar_missao(self, lista_coordenadas):
@@ -117,10 +121,11 @@ class ControleTello:
                 relative_y = y_target - self.coordinates[1] 
                 self.tello.go_xyz_speed(x=relative_x, y=relative_y, z=0, speed=60)
                 self.coordinates = [x_target, y_target]
-                self.tello.rotate_clockwise(yaw_target)
-                yaw_acumulado += yaw_target
-                time.sleep(5)
-                self.tello.rotate_clockwise(-yaw_acumulado)
+                if yaw_target > 0:
+                    self.tello.rotate_clockwise(yaw_target)
+                    yaw_acumulado += yaw_target
+                    time.sleep(5)
+                    self.tello.rotate_clockwise(-yaw_acumulado)
 
         if self.tello:
             self.tello.land()
