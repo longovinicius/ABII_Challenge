@@ -14,8 +14,8 @@ class ControleTello:
         self.tello.streamon()
         self.tello.takeoff()
         time.sleep(1)
-        #self.tello.move_up(altura)
-        self.x, self.y, self.yaw_atual = 0, 0, 0
+        self.tello.move_up(altura)
+        self.x, self.y, self.yaw = 0, 0, 0
         self.detected_ids = set()
 
         # Initialize the MarkerDetector
@@ -23,6 +23,8 @@ class ControleTello:
         self.marker_detector = MarkerDetector(frame_read.frame)
         self.image_dir = "aruco_images"
         os.makedirs(self.image_dir, exist_ok=True)
+
+        self.define_hotkeys()
 
     def define_hotkeys(self):
         keyboard.on_press_key("space", self.stop)
@@ -71,15 +73,15 @@ class ControleTello:
 
     def missao_0(self):
         return [
-            ((1, 0), 90),
-            ((0, 0), 180),
+            ((1, 0), 0),
+            ((0, 0), 0),
         ]
 
     def missao_1(self):
         return [
-            ((3, 0), 0),
-            ((0, -3), 90),
-            ((-2, 3), 180),
+            ((0.5, 0), 90),
+            ((1, 0), 270),
+            ((0, 0), 300),
         ]
 
     def missao_2(self):
@@ -99,7 +101,7 @@ class ControleTello:
             angulo_acumulado = 0
             (x_target, y_target), yaw_target = coords
             x_mov, y_mov = (x_target - self.x, y_target - self.y)
-            print(f"Initial Angle: {self.yaw_atual}")
+            print(f"Initial Angle: {self.yaw}")
             modulo, angulo = cartesian_to_polar(x_mov, y_mov)
             print(f"Angulo Calculado Cartesiano: {angulo}")
             self.x += x_target
@@ -135,9 +137,9 @@ class ControleTello:
 
 
 if __name__ == "__main__":
-    altura_de_voo = 30
+    altura_de_voo = 70
     controle_tello = ControleTello(altura_de_voo)
 
-    missao = controle_tello.missao_0()  # ou missao_1()
+    missao = controle_tello.missao_1()  # ou missao_1()
 
     controle_tello.executar_missao(missao)
