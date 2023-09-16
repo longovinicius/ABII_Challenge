@@ -11,7 +11,7 @@ class CronometerMQTT:
         self.client.on_message = self.on_message
 
         self.prox_id = 1
-        self.tempos = {}
+        self.tempo_decorrido = None
 
     def on_connect(self, client, userdata, flags, rc):
         """Callback function to handle the connection"""
@@ -41,8 +41,8 @@ class CronometerMQTT:
                 print(f"Next ID: {self.prox_id}")
 
         elif msg.topic == "TempoDecorrido":
-            self.tempos[self.prox_id] = payload
-            print(f"Tempos decorridos: {self.tempos}")
+            self.tempo_decorrido = payload
+            print(f"Tempo decorrido: {self.tempo_decorrido}")
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload, qos=1)

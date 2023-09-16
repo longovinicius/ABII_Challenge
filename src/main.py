@@ -78,6 +78,7 @@ class ControleTello:
 
                 # Teoricamente, aqui já é pra atualizar o Prox_ID
 
+                timestamp = None
                 if aruco["id"] == self.mqtt.prox_id:
                     # TODO: Lógica para o que fazer assim que o target é detectado
                     time.sleep(0.5)
@@ -85,13 +86,19 @@ class ControleTello:
                         # Possível Deadlock caso a Organização não atualize o ProxID
                         self.mqtt.publish("IDAtual", aruco["id"])
                         time.sleep(0.5)
+                    timestamp = self.mqtt.tempo_decorrido
                 elif isinstance(self.mqtt.prox_id, list):
                     # TODO: Lógica pro AMR!
+                    # Vai para posição próxima ao AMR
+                    # Olha pra frente
+                    # Espera o AMR passar
+                    # Vai para frente devagar até o aruco do AMR sumir do campo de visão
+                    # Quando estiver a uma certa distancia, desliga o drone
                     pass
 
                 # Salvar imagem do Aruco detectado
                 # TODO: Salvar uns 3-5 de cada aruco
-                self.save_picture(aruco["id"], processed_frame)
+                self.save_picture(aruco["id"], processed_frame, timestamp)
 
                 # Reset counter and time for Glitch logic
                 self.marker_glitch[aruco["id"]]["count"] = 0
@@ -112,11 +119,11 @@ class ControleTello:
             return True
         return False
 
-    def save_picture(self, aruco_id, frame):
+    def save_picture(self, aruco_id, frame, timestamp):
         if aruco_id not in self.saved_picture_ids:
             # TODO: add timestamp to image
             image_path = os.path.join(
-                self.image_dir, f"aruco_target_{aruco_id}.jpg"
+                self.image_dir, f"aruco_target_{aruco_id}_{timestamp or ''}.jpg"
             )
             cv2.imwrite(image_path, frame)
             print(f"Image saved at {image_path}")
@@ -169,7 +176,7 @@ class ControleTello:
 
             if self.tello:
                 time.sleep(1)
-                self.tello.go_xyz_speed(x=x_target, y=y_target, z=0, speed=60)
+                self.tello.go_xyz_speed(x=x_target, y=y_target, z=0, speed=40)
                 self.tello.rotate_clockwise(yaw_target)
                 yaw_acumulado += yaw_target
                 time.sleep(5)
