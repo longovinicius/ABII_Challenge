@@ -28,7 +28,7 @@ class ControleTello:
         self.tello = Tello()
 
         self.tello.connect()
-        time.sleep(1)
+        time.sleep(1) 
         self.tello.streamon()
         time.sleep(1)
         self.tello.takeoff()
@@ -180,9 +180,9 @@ class ControleTello:
 
 
 if __name__ == "__main__":
-    altura_de_voo = 30
+    altura_de_voo = 20
     controle_tello = ControleTello(altura_de_voo)
 
-    missao = controle_tello.missao_2()  # ou missao_1()
+    missao = controle_tello.missao_0()  # ou missao_1()
 
     controle_tello.executar_missao(missao)
