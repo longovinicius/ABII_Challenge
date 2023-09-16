@@ -106,6 +106,7 @@ class ControleTello:
                 elif isinstance(self.mqtt.prox_id, list):
                     if aruco['id'] == self.mqtt.prox_id[0]:
                         self.AMR_dist = self.aruco['distance']
+                        print(self.AMR_dist)
 
                     # TODO: Lógica pro AMR!
                     # Vai para posição próxima ao AMR
@@ -195,9 +196,11 @@ class ControleTello:
                     self.tello.move_down(150)
                     while self.AMR_dist is None:
                         time.sleep(3)
+                    print(f"amr_dist = {self.AMR_dist}")
                     # Andar em X ateh que amr dist seja 30
                     # amr dist - 30
-                    self.tello.go_xyz_speed(x=int(self.AMR_dist*100)-30, y=0, z=0, speed=40)
+                    constant = 2
+                    self.tello.go_xyz_speed(x=int(self.AMR_dist*100/constant)-30, y=0, z=0, speed=40)
                     self.AMR_dist = None
                     # Esperar o aruco 22 do amr aparecer novamente
                     while self.AMR_dist is None:
