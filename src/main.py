@@ -9,7 +9,7 @@ import cv2
 import os
 from cronometer_mqtt import CronometerMQTT
 
-MQTT = True
+MQTT = False
 
 CERAMICA = 40
 
@@ -164,18 +164,9 @@ class ControleTello:
 
     def missao_0(self):
         return [
-            #p0 -14, 0
-            #p1 -2, 17
-            #p2
             ((-CERAMICA*7, 0), 0),
             ((-CERAMICA*14, 0), 135),
             ((-CERAMICA*14, 0), 45),
-            # ((-CERAMICA*8, -CERAMICA*5), 0),
-            # ((-CERAMICA*4, -CERAMICA*10), 0),
-            # ((-CERAMICA*2, -CERAMICA*17), 225),
-            # ((-CERAMICA*2, -CERAMICA*17), 310),
-            # ((CERAMICA*5, -CERAMICA*5), 0),
-            # ((-CERAMICA*8, -CERAMICA*9), 45),
         ]
 
     def missao_1(self):
@@ -288,6 +279,6 @@ if __name__ == "__main__":
     altura_de_voo = 200
     controle_tello = ControleTello(altura_de_voo)
 
-    missao = controle_tello.missao_1()  # ou missao_1()
+    missao = controle_tello.missao_0()  # ou missao_1()
 
     controle_tello.executar_missao(missao)
